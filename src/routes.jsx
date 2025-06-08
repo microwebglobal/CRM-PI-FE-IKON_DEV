@@ -1,13 +1,13 @@
 import {
   HomeIcon,
   UserCircleIcon,
-  TableCellsIcon,
-  InformationCircleIcon,
   ServerStackIcon,
   RectangleStackIcon,
+  ChatBubbleBottomCenterIcon,
 } from "@heroicons/react/24/solid";
-import { Home, Profile, Tables, Notifications } from "@/pages/dashboard";
+import { Home, Profile, Leads, Conversations } from "@/pages/dashboard";
 import { SignIn, SignUp } from "@/pages/auth";
+import { HelpCircle, LineChartIcon, Settings } from "lucide-react";
 
 const icon = {
   className: "w-5 h-5 text-inherit",
@@ -24,38 +24,56 @@ export const routes = [
         element: <Home />,
       },
       {
+        icon: <LineChartIcon {...icon} />,
+        name: "Leads",
+        path: "/leads",
+        element: <Leads />,
+      },
+      {
+        icon: <ChatBubbleBottomCenterIcon {...icon} />,
+        name: "Conversations",
+        path: "/conversations",
+        element: <Conversations />,
+      },
+      {
         icon: <UserCircleIcon {...icon} />,
-        name: "profile",
-        path: "/profile",
+        name: "Account",
+        path: "/account",
         element: <Profile />,
       },
       {
-        icon: <TableCellsIcon {...icon} />,
-        name: "tables",
-        path: "/tables",
-        element: <Tables />,
+        icon: <Settings {...icon} />,
+        name: "Settings",
+        path: "/settings",
+        element: <Profile />,
       },
       {
-        icon: <InformationCircleIcon {...icon} />,
-        name: "notifications",
-        path: "/notifications",
-        element: <Notifications />,
+        icon: <HelpCircle {...icon} />,
+        name: "Help",
+        path: "/help",
+        element: <Profile />,
       },
     ],
   },
   {
-    title: "auth pages",
+    title: "",
     layout: "auth",
     pages: [
       {
         icon: <ServerStackIcon {...icon} />,
-        name: "sign in",
+        name: "Service Agents",
         path: "/sign-in",
         element: <SignIn />,
       },
       {
         icon: <RectangleStackIcon {...icon} />,
-        name: "sign up",
+        name: "Switch Account",
+        path: "/sign-up",
+        element: <SignUp />,
+      },
+      {
+        icon: <RectangleStackIcon {...icon} />,
+        name: "Logout",
         path: "/sign-up",
         element: <SignUp />,
       },

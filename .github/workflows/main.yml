@@ -3,8 +3,7 @@ name: Deploy Frontend to VPS
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,17 +17,64 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
-      
+      run: |
+        npm install --legacy-peer-deps --no-audit --no-fund
+        
     - name: Build application
-      run: npm run build
+      run: |
+        npm run build
       env:
         VITE_API_BASE_URL: http://pidash.microwebstudios.com:8080
+        NODE_ENV: production
         
-    - name: Deploy to VPS
+    - name: Verify build
+      run: |
+        if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
+          echo "Build failed - no dist directory or index.html"
+          exit 1
+        fi
+        echo "✓ Build successful"
+        echo "Build size: $(du -sh dist/)"
+        ls -la dist/
+        
+    - name: Add deployment info
+      run: |
+        echo "Build Date: $(date)" > dist/deployment-info.txt
+        echo "Commit: ${{ github.sha }}" >> dist/deployment-info.txt
+        echo "Branch: ${{ github.ref_name }}" >> dist/deployment-info.txt
+        
+    # Step 1: Prepare the target directory via SSH
+    - name: Prepare target directory
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deploy
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          echo "Preparing deployment directory..."
+          
+          # Create backup if frontend exists
+          if [ -d "/var/www/pidash-frontend" ] && [ "$(ls -A /var/www/pidash-frontend 2>/dev/null)" ]; then
+            echo "Creating backup..."
+            sudo mkdir -p /var/www/backups
+            sudo cp -r /var/www/pidash-frontend /var/www/backups/frontend-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+          fi
+          
+          # Ensure directory exists and is owned by deploy user
+          sudo mkdir -p /var/www/pidash-frontend
+          sudo chown -R deploy:deploy /var/www/pidash-frontend
+          sudo chmod -R 755 /var/www/pidash-frontend
+          
+          # Clear the directory
+          rm -rf /var/www/pidash-frontend/* 2>/dev/null || true
+          
+          echo "Directory prepared successfully"
+          ls -la /var/www/pidash-frontend/
+          
+    # Step 2: Copy files using SCP (without rm option to avoid permission issues)
+    - name: Copy files to VPS
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -37,14 +83,109 @@ jobs:
         source: "dist/*"
         target: "/var/www/pidash-frontend/"
         strip_components: 1
-        rm: true
+        overwrite: true
+        # Remove the rm: true option that was causing issues
         
-    - name: Set permissions
+    # Step 3: Set proper permissions and restart nginx
+    - name: Set permissions and restart nginx
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.VPS_HOST }}
         username: deploy
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
+          echo "Setting permissions and verifying deployment..."
+          
+          # Set proper ownership for web server
           sudo chown -R www-data:www-data /var/www/pidash-frontend
-          sudo chmod -R 755 /var/www/pidash-frontend
+          sudo find /var/www/pidash-frontend -type d -exec chmod 755 {} \;
+          sudo find /var/www/pidash-frontend -type f -exec chmod 644 {} \;
+          
+          # Verify essential files exist
+          if [ -f "/var/www/pidash-frontend/index.html" ]; then
+            echo "✓ index.html found"
+          else
+            echo "✗ index.html missing!"
+            echo "Files in directory:"
+            ls -la /var/www/pidash-frontend/
+            exit 1
+          fi
+          
+          # Check for assets
+          JS_COUNT=$(find /var/www/pidash-frontend -name "*.js" | wc -l)
+          CSS_COUNT=$(find /var/www/pidash-frontend -name "*.css" | wc -l)
+          
+          echo "Found $JS_COUNT JavaScript files and $CSS_COUNT CSS files"
+          
+          # Test nginx configuration
+          echo "Testing nginx configuration..."
+          if sudo nginx -t; then
+            echo "✓ Nginx config is valid"
+            
+            # Reload nginx
+            echo "Reloading nginx..."
+            sudo systemctl reload nginx
+            
+            # Check nginx status
+            if sudo systemctl is-active --quiet nginx; then
+              echo "✓ Nginx is running"
+            else
+              echo "✗ Nginx failed to start"
+              sudo systemctl status nginx --no-pager
+              exit 1
+            fi
+          else
+            echo "✗ Nginx configuration test failed"
+            exit 1
+          fi
+          
+    # Step 4: Final verification
+    - name: Verify deployment
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deploy
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          echo "=== Final Deployment Verification ==="
+          
+          # Test local HTTP response
+          echo "Testing local access..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null || echo "000")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✓ Frontend is accessible (HTTP $HTTP_CODE)"
+          else
+            echo "⚠ Frontend returned HTTP $HTTP_CODE"
+          fi
+          
+          # Test specific routes
+          echo "Testing frontend routes:"
+          for route in "/" "/dashboard/home" "/auth/sign-in"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost$route" 2>/dev/null || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "✓ $route: HTTP $CODE"
+            else
+              echo "⚠ $route: HTTP $CODE"
+            fi
+          done
+          
+          # Show directory info
+          echo "Directory contents:"
+          ls -la /var/www/pidash-frontend/ | head -10
+          
+          # Show deployment info
+          if [ -f "/var/www/pidash-frontend/deployment-info.txt" ]; then
+            echo "Deployment details:"
+            cat /var/www/pidash-frontend/deployment-info.txt
+          fi
+          
+          # Show disk usage
+          echo "Frontend size: $(du -sh /var/www/pidash-frontend/)"
+          
+          echo ""
+          echo "🎉 Frontend deployment completed successfully!"
+          echo "🌐 Available at: http://pidash.microwebstudios.com"
+          echo "📱 Dashboard: http://pidash.microwebstudios.com/dashboard/home"
+          echo "🔐 Login: http://pidash.microwebstudios.com/auth/sign-in"
+          echo "📝 Deployed at: $(date)"

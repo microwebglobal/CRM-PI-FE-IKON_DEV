@@ -125,7 +125,7 @@ export function SignIn() {
         </div>
 
         {/* Right Side - Image */}
-        <div className="hidden lg:block w-1/2 relative max-h-[700px] overflow-hidden rounded-r-3xl">
+        <div className="hidden lg:block w-1/2 relative max-h-[650px] overflow-hidden rounded-r-3xl">
           <img
             src="/img/chatbot-image.png"
             alt="Login Illustration"

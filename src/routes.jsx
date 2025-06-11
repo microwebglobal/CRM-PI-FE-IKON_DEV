@@ -41,36 +41,6 @@ export const routes = [
         path: "/account",
         element: <Profile />,
       },
-      {
-        icon: <HelpCircle {...icon} />,
-        name: "Help",
-        path: "/help",
-        element: <Profile />,
-      },
-    ],
-  },
-  {
-    title: "",
-    layout: "auth",
-    pages: [
-      {
-        icon: <ServerStackIcon {...icon} />,
-        name: "Service Agents",
-        path: "/sign-in",
-        element: <SignIn />,
-      },
-      {
-        icon: <RectangleStackIcon {...icon} />,
-        name: "Switch Account",
-        path: "/sign-up",
-        element: <SignUp />,
-      },
-      {
-        icon: <RectangleStackIcon {...icon} />,
-        name: "Logout",
-        path: "/sign-up",
-        element: <SignUp />,
-      },
     ],
   },
 ];

@@ -11,7 +11,7 @@ import {
   Button,
 } from "@material-tailwind/react";
 import API from "../../utils/apiService";
-import { Select, Option } from "@material-tailwind/react";
+import Swal from "sweetalert2";
 
 export function Leads() {
   const [open, setOpen] = useState(false);
@@ -37,6 +37,37 @@ export function Leads() {
   };
 
   const updateStatus = async (status) => {
+    const { isConfirmed } = await Swal.fire({
+      title: `Change status to ${status}?`,
+      text: "Are you sure you want to update the status of this lead?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, update it!",
+      willOpen: () => {
+        const confirmBtn = document.querySelector(".swal2-confirm");
+        const cancelBtn = document.querySelector(".swal2-cancel");
+
+        if (confirmBtn) {
+          confirmBtn.style.backgroundColor = "#dc2626";
+          confirmBtn.style.color = "white";
+          confirmBtn.style.padding = "8px 16px";
+          confirmBtn.style.margin = "8px";
+          confirmBtn.style.borderRadius = "0.375rem";
+        }
+
+        if (cancelBtn) {
+          cancelBtn.style.backgroundColor = "#e5e7eb";
+          cancelBtn.style.color = "black";
+          cancelBtn.style.padding = "8px 16px";
+          cancelBtn.style.borderRadius = "0.375rem";
+        }
+      },
+    });
+
+    if (!isConfirmed) return;
+
     try {
       await API.leadService.updateLeadStatus(selectedLead.id, status);
       setLeads((prev) =>
@@ -45,8 +76,21 @@ export function Leads() {
         )
       );
       setSelectedLead((prev) => ({ ...prev, status }));
+
+      Swal.fire({
+        title: "Success!",
+        text: `Status has been updated to ${status}.`,
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (err) {
       console.error("Failed to update status", err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update status. Please try again.",
+        icon: "error",
+      });
     }
   };
 
@@ -73,7 +117,7 @@ export function Leads() {
             <thead>
               <tr>
                 {[
-                  "Session ID",
+                  "Lead No.",
                   "Full Name",
                   "Insurance Type",
                   "Vehicle No.",
@@ -106,10 +150,10 @@ export function Leads() {
                   </td>
                 </tr>
               ) : (
-                leads.map((lead) => (
+                leads.map((lead, index) => (
                   <tr key={lead.id}>
                     <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.sessionId}
+                      {index + 1}
                     </td>
                     <td className="py-3 px-5 border-b border-blue-gray-50">
                       {lead.fullName}
@@ -130,9 +174,10 @@ export function Leads() {
                       <Button
                         variant="outlined"
                         color="black"
+                        size="sm" // 👈 Make button smaller
                         onClick={() => handleOpen(lead)}
                       >
-                        View Details
+                        View
                       </Button>
                     </td>
                   </tr>
@@ -148,93 +193,109 @@ export function Leads() {
         open={open}
         handler={() => setOpen(false)}
         size="lg"
-        className="max-w-3xl"
+        className="max-w-xl rounded-2xl"
       >
-        <DialogHeader className="text-xl font-semibold border-b border-gray-200">
-          Lead Details
+        {/* Header */}
+        <DialogHeader className="bg-black text-white px-8 py-4 text-2xl font-bold border-b border-blue-300 flex items-center gap-3 rounded-t-2xl">
+          <i className="fas fa-user-circle text-3xl"></i> Lead Details
         </DialogHeader>
 
-        <DialogBody divider className="space-y-6 py-6 px-8">
+        {/* Body with scrollable content */}
+        <DialogBody
+          divider
+          className="space-y-6 py-6 px-8 bg-white max-h-[70vh] overflow-y-auto"
+        >
           {selectedLead && (
             <>
               {/* Basic Info */}
-              <section className="space-y-2">
-                <Typography className="text-gray-700 font-medium">
-                  <strong>Full Name:</strong> {selectedLead.fullName}
+              <section className="p-4 border border-gray-200 rounded-lg shadow-sm">
+                <Typography className="text-gray-800 font-semibold text-lg mb-2">
+                  Basic Information
                 </Typography>
-                <Typography className="text-gray-700 font-medium">
-                  <strong>Email:</strong> {selectedLead.email}
-                </Typography>
-                <Typography className="text-gray-700 font-medium">
-                  <strong>Contact:</strong> {selectedLead.contactNumber}
-                </Typography>
-                <Typography className="text-gray-700 font-medium">
-                  <strong>Insurance Type:</strong> {selectedLead.insuranceType}
-                </Typography>
+                <div className="space-y-1 text-gray-700">
+                  <Typography>
+                    <strong>Full Name:</strong> {selectedLead.fullName}
+                  </Typography>
+                  <Typography>
+                    <strong>Email:</strong> {selectedLead.email}
+                  </Typography>
+                  <Typography>
+                    <strong>Contact:</strong> {selectedLead.contactNumber}
+                  </Typography>
+                  <Typography>
+                    <strong>Insurance Type:</strong>{" "}
+                    {selectedLead.insuranceType}
+                  </Typography>
+                </div>
               </section>
 
               {/* Vehicle Info */}
               {selectedLead.vehicleNumber && (
-                <section className="space-y-2 border-t border-gray-200 pt-4">
-                  <Typography className="text-gray-600 font-semibold uppercase text-sm tracking-wide">
+                <section className="p-4 border border-gray-200 rounded-lg shadow-sm">
+                  <Typography className="text-gray-800 font-semibold text-lg mb-2">
                     Vehicle Information
                   </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Vehicle Number:</strong>{" "}
-                    {selectedLead.vehicleNumber}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Vehicle Model:</strong> {selectedLead.vehicleModel}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Year:</strong> {selectedLead.yearOfManufacture}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Usage Type:</strong> {selectedLead.usageType}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Estimated Value:</strong>{" "}
-                    {selectedLead.estimatedValue}
-                  </Typography>
+                  <div className="space-y-1 text-gray-700">
+                    <Typography>
+                      <strong>Vehicle Number:</strong>{" "}
+                      {selectedLead.vehicleNumber}
+                    </Typography>
+                    <Typography>
+                      <strong>Vehicle Model:</strong>{" "}
+                      {selectedLead.vehicleModel}
+                    </Typography>
+                    <Typography>
+                      <strong>Year:</strong> {selectedLead.yearOfManufacture}
+                    </Typography>
+                    <Typography>
+                      <strong>Usage Type:</strong> {selectedLead.usageType}
+                    </Typography>
+                    <Typography>
+                      <strong>Estimated Value:</strong>{" "}
+                      {selectedLead.estimatedValue}
+                    </Typography>
+                  </div>
                 </section>
               )}
 
               {/* Travel Info */}
               {selectedLead.destination && (
-                <section className="space-y-2 border-t border-gray-200 pt-4">
-                  <Typography className="text-gray-600 font-semibold uppercase text-sm tracking-wide">
+                <section className="p-4 border border-gray-200 rounded-lg shadow-sm">
+                  <Typography className="text-gray-800 font-semibold text-lg mb-2">
                     Travel Information
                   </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Destination:</strong> {selectedLead.destination}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Travel Dates:</strong> {selectedLead.travelDates}
-                  </Typography>
-                  <Typography className="text-gray-700">
-                    <strong>Age:</strong> {selectedLead.travellerAge}
-                  </Typography>
+                  <div className="space-y-1 text-gray-700">
+                    <Typography>
+                      <strong>Destination:</strong> {selectedLead.destination}
+                    </Typography>
+                    <Typography>
+                      <strong>Travel Dates:</strong> {selectedLead.travelDates}
+                    </Typography>
+                    <Typography>
+                      <strong>Age:</strong> {selectedLead.travellerAge}
+                    </Typography>
+                  </div>
                 </section>
               )}
 
               {/* Status */}
-              <section className="border-t border-gray-200 pt-4">
-                <Typography className="text-gray-700 font-medium">
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={`px-2 py-1 rounded text-sm font-semibold ${
-                      selectedLead.status === "NEW"
-                        ? "bg-green-100 text-green-800"
-                        : selectedLead.status === "ON_HOLD"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : selectedLead.status === "CLOSED"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
-                  >
-                    {selectedLead.status}
-                  </span>
+              <section className="p-4 border border-gray-200 rounded-lg shadow-sm">
+                <Typography className="text-gray-800 font-semibold text-lg mb-2">
+                  Status
                 </Typography>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                    selectedLead.status === "NEW"
+                      ? "bg-green-100 text-green-700"
+                      : selectedLead.status === "ON_HOLD"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : selectedLead.status === "CLOSED"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {selectedLead.status}
+                </span>
               </section>
 
               {/* Action Buttons */}
@@ -243,19 +304,21 @@ export function Leads() {
                   <>
                     <Button
                       color="amber"
-                      variant="outlined"
+                      variant="gradient"
                       size="md"
+                      className="rounded-full shadow-md"
                       onClick={() => updateStatus("ON_HOLD")}
                     >
-                      Hold
+                      Hold Lead
                     </Button>
                     <Button
                       color="red"
-                      variant="filled"
+                      variant="gradient"
                       size="md"
+                      className="rounded-full shadow-md"
                       onClick={() => updateStatus("CLOSED")}
                     >
-                      Close
+                      Close Lead
                     </Button>
                   </>
                 )}
@@ -263,8 +326,9 @@ export function Leads() {
                 {selectedLead.status === "ON_HOLD" && (
                   <Button
                     color="red"
-                    variant="filled"
+                    variant="gradient"
                     size="md"
+                    className="rounded-full shadow-md"
                     onClick={() => updateStatus("CLOSED")}
                   >
                     Close
@@ -275,11 +339,13 @@ export function Leads() {
           )}
         </DialogBody>
 
-        <DialogFooter className="border-t border-gray-200 py-3 px-8">
+        {/* Footer */}
+        <DialogFooter className="border-t border-gray-200 py-3 px-8 bg-gray-50">
           <Button
             variant="text"
-            color="blue-gray"
+            color="red"
             onClick={() => setOpen(false)}
+            className="text-black hover:underline bg-red-200"
           >
             Cancel
           </Button>

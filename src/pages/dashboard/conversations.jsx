@@ -61,13 +61,12 @@ export function Conversations() {
           <table className="w-full min-w-[640px] table-auto cursor-pointer">
             <thead>
               <tr>
-                {/* Customize columns as per your ChatDTO structure */}
                 <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
                   <Typography
                     variant="small"
                     className="text-[11px] font-bold uppercase text-blue-gray-400"
                   >
-                    Session ID
+                    Conversation No.
                   </Typography>
                 </th>
                 <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
@@ -100,17 +99,17 @@ export function Conversations() {
               {sessions.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={4}
                     className="py-3 px-5 text-center text-gray-500"
                   >
                     No conversations found.
                   </td>
                 </tr>
               ) : (
-                sessions.map(({ sessionId, message, timestamp }) => (
+                sessions.map(({ sessionId, message, timestamp }, index) => (
                   <tr key={sessionId}>
                     <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {sessionId}
+                      {index + 1}
                     </td>
                     <td className="py-3 px-5 border-b border-blue-gray-50">
                       {message}
@@ -122,9 +121,10 @@ export function Conversations() {
                       <Button
                         variant="outlined"
                         color="black"
+                        size="sm" // 👈 Smaller button
                         onClick={() => handleOpen(sessionId)}
                       >
-                        View Full Chat
+                        View
                       </Button>
                     </td>
                   </tr>
@@ -140,40 +140,63 @@ export function Conversations() {
         open={open}
         handler={() => setOpen(false)}
         size="lg"
-        className="max-w-3xl"
+        className="max-w-3xl rounded-2xl"
       >
-        <DialogHeader>Conversation Details</DialogHeader>
-        <DialogBody divider>
+        <DialogHeader className="bg-black text-white px-6 py-4 text-xl font-bold border-b border-blue-300 rounded-t-2xl">
+          <i className="fas fa-comments mr-2"></i>Conversation Details
+        </DialogHeader>
+
+        <DialogBody
+          divider
+          className="bg-white max-h-[500px] overflow-y-auto py-6 px-4"
+        >
           {loading ? (
             <Typography>Loading chat history...</Typography>
           ) : chatHistory.length === 0 ? (
             <Typography>No messages in this conversation.</Typography>
           ) : (
-            <div className="space-y-4 max-h-[400px] overflow-y-auto">
-              {chatHistory.map(({ id, message, sender, timestamp }, index) => (
-                <div
-                  key={id || index}
-                  className="p-2 rounded border border-gray-200"
-                >
-                  <Typography
-                    variant="small"
-                    color="blue-gray"
-                    className="font-semibold"
+            <div className="space-y-4">
+              {chatHistory.map(({ id, message, sender, timestamp }, index) => {
+                const isAgent = sender?.toLowerCase().includes("agent");
+                return (
+                  <div
+                    key={id || index}
+                    className={`flex ${
+                      isAgent ? "justify-end" : "justify-start"
+                    }`}
                   >
-                    {sender || "Unknown"}{" "}
-                    <span className="text-xs text-gray-500 ml-2">
-                      {new Date(timestamp).toLocaleString()}
-                    </span>
-                  </Typography>
-                  <Typography className="mt-1">{message}</Typography>
-                </div>
-              ))}
+                    <div
+                      className={`max-w-[75%] p-4 rounded-xl shadow-md ${
+                        isAgent
+                          ? "bg-blue-100 text-blue-900"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      <div className="text-sm font-semibold mb-1">
+                        {sender || "Unknown"}
+                        <span className="text-xs text-gray-500 ml-2">
+                          {new Date(timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <Typography className="text-sm whitespace-pre-line">
+                        {message}
+                      </Typography>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </DialogBody>
-        <DialogFooter>
-          <Button variant="text" color="red" onClick={() => setOpen(false)}>
-            Close
+
+        <DialogFooter className="border-t border-gray-200 py-3 px-8 bg-gray-50">
+          <Button
+            variant="text"
+            color="red"
+            onClick={() => setOpen(false)}
+            className="text-black hover:underline bg-red-200"
+          >
+            Cancel
           </Button>
         </DialogFooter>
       </Dialog>

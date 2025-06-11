@@ -27,21 +27,32 @@ const refreshAccessToken = async () => {
   const refreshToken = localStorage.getItem("refreshToken");
   if (!refreshToken) throw new Error("No refresh token");
 
-  const response = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
-    refreshToken,
-  });
+  try {
+    const response = await axios.post(`${BASE_URL}/api/auth/refresh-token`, {
+      refreshToken,
+    });
 
-  const { accessToken, refreshToken: newRefreshToken } = response.data;
+    console.log("Token refresh response:", response);
 
-  if (accessToken) {
-    localStorage.setItem("accessToken", accessToken);
+    const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+    }
+
+    if (newRefreshToken) {
+      localStorage.setItem("refreshToken", newRefreshToken);
+    }
+
+    return accessToken;
+  } catch (error) {
+    console.error(
+      "Failed to refresh token",
+      error.response || error.message || error
+    );
+    handleSessionExpired();
+    throw error;
   }
-
-  if (newRefreshToken) {
-    localStorage.setItem("refreshToken", newRefreshToken);
-  }
-
-  return accessToken;
 };
 
 const handleSessionExpired = () => {

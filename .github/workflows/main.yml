@@ -1,0 +1,50 @@
+name: Deploy Frontend to VPS
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+      
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_API_BASE_URL: http://pidash.microwebstudios.com:8080
+        
+    - name: Deploy to VPS
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deploy
+        key: ${{ secrets.VPS_SSH_KEY }}
+        source: "dist/*"
+        target: "/var/www/pidash-frontend/"
+        strip_components: 1
+        rm: true
+        
+    - name: Set permissions
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deploy
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          sudo chown -R www-data:www-data /var/www/pidash-frontend
+          sudo chmod -R 755 /var/www/pidash-frontend

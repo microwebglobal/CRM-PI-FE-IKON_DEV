@@ -1,38 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Typography,
-  Card,
-  CardHeader,
-  CardBody,
-  IconButton,
-  Menu,
-  MenuHandler,
-  MenuList,
-  MenuItem,
-  Avatar,
-  Tooltip,
-  Progress,
   Button,
   Popover,
   PopoverHandler,
   PopoverContent,
+  Typography,
 } from "@material-tailwind/react";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { EllipsisVerticalIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
-import { StatisticsCard } from "@/widgets/cards";
-import { StatisticsChart } from "@/widgets/charts";
-import {
-  statisticsCardsData,
-  statisticsChartsData,
-  projectsTableData,
-  ordersOverviewData,
-} from "@/data";
-import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { DateRangePicker } from "react-date-range";
 import LeadsStatCard from "@/widgets/cards/leads-stat-card";
-import { BarChart } from "@mui/x-charts/BarChart";
+import { StatisticsCard } from "@/widgets/cards";
+import { BanknoteIcon, PauseCircle, RefreshCcwDot } from "lucide-react";
+import { LockClosedIcon } from "@heroicons/react/24/solid";
+import apiService from "@/utils/apiService";
+import LeadsBarChart from "@/widgets/charts/barchart";
 
 const stats = {
   leads: [
@@ -97,6 +79,24 @@ export function Home() {
     key: "selection",
   });
 
+  const [leadCountsByStatus, setLeadCountsByStatus] = useState({});
+  const [leadCountsByInsurance, setLeadCountsByInsurance] = useState({});
+
+  useEffect(() => {
+    async function fetchLeadCounts() {
+      const statusResponse =
+        await apiService.leadService.getLeadCountByStatus();
+      const insuranceResponse =
+        await apiService.leadService.getLeadCountByInsuranceType();
+      console.log(statusResponse.data);
+      console.log(insuranceResponse.data);
+      setLeadCountsByStatus(statusResponse.data);
+      setLeadCountsByInsurance(insuranceResponse.data);
+    }
+
+    fetchLeadCounts();
+  }, []);
+
   const handleSelect = (ranges) => {
     setSelectionRange(ranges.selection);
     console.log("Start:", ranges.selection.startDate);
@@ -105,7 +105,7 @@ export function Home() {
   return (
     <div className="mt-5">
       {/*Date range selector */}
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <Popover placement="bottom-start">
           <PopoverHandler>
             <Button variant="outlined" color="blue-gray">
@@ -122,42 +122,87 @@ export function Home() {
             />
           </PopoverContent>
         </Popover>
-      </div>
+      </div> */}
       {/*stat section */}
-      <div className="grid lg:grid-cols-2 gap-x-10 gap-y-6 mb-10">
+      <div className="grid lg:grid-cols-3 gap-x-10 gap-y-6 mb-10">
+        <StatisticsCard
+          color="green"
+          icon={<RefreshCcwDot className="h-6 w-6 text-white" />}
+          title="New Leads"
+          value={leadCountsByStatus?.NEW || 0}
+          footer={
+            <div className="flex items-center">
+              <Typography
+                variant="small"
+                className="font-normal text-blue-gray-600"
+              >
+                Updated just now
+              </Typography>
+            </div>
+          }
+        />
+        <StatisticsCard
+          color="blue"
+          icon={<PauseCircle className="h-6 w-6 text-white" />}
+          title="On Hold Leads"
+          value={leadCountsByStatus?.ON_HOLD || 0}
+          footer={
+            <div className="flex items-center">
+              <Typography
+                variant="small"
+                className="font-normal text-blue-gray-600"
+              >
+                Updated just now
+              </Typography>
+            </div>
+          }
+        />
+        <StatisticsCard
+          color="yellow"
+          icon={<LockClosedIcon className="h-6 w-6 text-white" />}
+          title="Closed Leads"
+          value={leadCountsByStatus?.CLOSED || 0}
+          footer={
+            <div className="flex items-center">
+              <Typography
+                variant="small"
+                className="font-normal text-blue-gray-600"
+              >
+                Updated just now
+              </Typography>
+            </div>
+          }
+        />
+      </div>
+      <hr />
+      <div className="mb-10 mt-5">
         {/* Total Leads */}
         <div>
-          <h2 className="text-lg font-bold mb-3">Total Leads</h2>
-          <div className="">
-            {stats.leads.map((item, idx) => (
-              <LeadsStatCard key={idx} {...item} />
-            ))}
-          </div>
-        </div>
-
-        {/* Total Conversations */}
-        <div>
-          <h2 className="text-lg font-bold mb-3">Total Conversations</h2>
-          <div>
-            {stats.conversations.map((item, idx) => (
-              <LeadsStatCard key={idx} {...item} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {Object.entries(leadCountsByInsurance).map(
+              ([insuranceType, count], idx) => (
+                <LeadsStatCard
+                  key={idx}
+                  icon={
+                    insuranceType.includes("Travel")
+                      ? "✈️"
+                      : insuranceType.includes("Motor")
+                      ? "🚗"
+                      : insuranceType.includes("Solar")
+                      ? "🔆"
+                      : "💼"
+                  }
+                  label={insuranceType}
+                  value={`${count} Leads`}
+                />
+              )
+            )}
           </div>
         </div>
       </div>
 
       <div>
-        <h2 className="text-lg font-bold mb-3">Bar Chart</h2>
-        <BarChart
-          series={[
-            { data: [35, 44, 24, 34] },
-            { data: [51, 6, 49, 30] },
-            { data: [15, 25, 30, 50] },
-            { data: [60, 50, 15, 25] },
-          ]}
-          height={290}
-          xAxis={[{ data: ["Q1", "Q2", "Q3", "Q4"] }]}
-        />
+        <LeadsBarChart />
       </div>
     </div>
   );

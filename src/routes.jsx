@@ -42,12 +42,6 @@ export const routes = [
         element: <Profile />,
       },
       {
-        icon: <Settings {...icon} />,
-        name: "Settings",
-        path: "/settings",
-        element: <Profile />,
-      },
-      {
         icon: <HelpCircle {...icon} />,
         name: "Help",
         path: "/help",

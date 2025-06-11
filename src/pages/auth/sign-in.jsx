@@ -5,92 +5,133 @@ import {
   Button,
   Typography,
 } from "@material-tailwind/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import axios from "axios";
 
 export function SignIn() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/login",
+        { email, password }
+      );
+
+      const { accessToken, refreshToken } = response.data;
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      navigate("/dashboard/account");
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        "Login failed. Please check credentials.";
+      setErrorMsg(message);
+    }
+  };
+
   return (
-    <section className="m-8 flex gap-4">
-      <div className="w-full lg:w-3/5 mt-24">
-        <div className="text-center">
-          <Typography variant="h2" className="font-bold mb-4">
-            Sign In
-          </Typography>
-          <Typography
-            variant="paragraph"
-            color="blue-gray"
-            className="text-lg font-normal"
-          >
-            Enter your email and password to Sign In.
-          </Typography>
-        </div>
-        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2">
-          <div className="mb-1 flex flex-col gap-6">
+    <section className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-6xl w-full bg-white rounded-3xl shadow-xl flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Side - Form */}
+        <div className="w-full lg:w-1/2 p-10 flex flex-col justify-center">
+          <div className="mb-6">
             <Typography
-              variant="small"
-              color="blue-gray"
-              className="-mb-3 font-medium"
+              variant="h3"
+              className="font-bold text-indigo-700 text-center mb-2"
             >
-              Your email
+              Welcome Back
             </Typography>
-            <Input
-              size="lg"
-              placeholder="name@mail.com"
-              className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-            />
-            <Typography
-              variant="small"
-              color="blue-gray"
-              className="-mb-3 font-medium"
-            >
-              Password
+            <Typography className="text-gray-600 text-center text-sm">
+              Enter your credentials to access your account
             </Typography>
-            <Input
-              type="password"
-              size="lg"
-              placeholder="********"
-              className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-            />
           </div>
-          <Checkbox
-            label={
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
               <Typography
                 variant="small"
-                color="gray"
-                className="flex items-center justify-start font-medium"
+                className="font-medium text-gray-700 mb-1"
               >
-                I agree the&nbsp;
-                <a
-                  href="#"
-                  className="font-normal text-black transition-colors hover:text-gray-900 underline"
-                >
-                  Terms and Conditions
-                </a>
+                Email
               </Typography>
-            }
-            containerProps={{ className: "-ml-2.5" }}
-          />
-          <Button className="mt-6" fullWidth>
-            Sign In
-          </Button>
+              <Input
+                size="lg"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@mail.com"
+                className="!border-gray-300 focus:!border-indigo-500"
+                required
+              />
+            </div>
 
-          <div className="flex items-center justify-between gap-2 mt-6">
-            <Typography variant="small" className="font-medium text-gray-900">
-              <a href="#">Forgot Password</a>
-            </Typography>
-          </div>
-        </form>
-      </div>
-      <div className="w-3/5 hidden lg:block">
-        <img
-          src="/img/slide2.jpg"
-          className="h-full mt-10 items-center w-full object-cover rounded-3xl"
-        />
+            <div>
+              <Typography
+                variant="small"
+                className="font-medium text-gray-700 mb-1"
+              >
+                Password
+              </Typography>
+              <Input
+                size="lg"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="!border-gray-300 focus:!border-indigo-500"
+                required
+              />
+            </div>
+
+            <Checkbox
+              label={
+                <Typography variant="small" color="gray">
+                  I agree to the{" "}
+                  <a href="#" className="text-indigo-600 underline">
+                    Terms and Conditions
+                  </a>
+                </Typography>
+              }
+            />
+
+            <Button
+              type="submit"
+              className="mt-2 bg-indigo-600 hover:bg-indigo-700"
+              fullWidth
+            >
+              Sign In
+            </Button>
+
+            {errorMsg && (
+              <Typography color="red" className="text-center text-sm mt-2">
+                {errorMsg}
+              </Typography>
+            )}
+
+            <div className="text-center mt-4">
+              <a href="#" className="text-sm text-indigo-600 hover:underline">
+                Forgot Password?
+              </a>
+            </div>
+          </form>
+        </div>
+
+        {/* Right Side - Image */}
+        <div className="hidden lg:block w-1/2 relative max-h-[700px] overflow-hidden rounded-r-3xl">
+          <img
+            src="/img/chatbot-image.png"
+            alt="Login Illustration"
+            className="object-cover w-full h-full"
+          />
+        </div>
       </div>
     </section>
   );

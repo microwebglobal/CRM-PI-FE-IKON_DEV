@@ -1,13 +1,9 @@
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardHeader,
   CardBody,
   Typography,
-  Avatar,
-  Chip,
-} from "@material-tailwind/react";
-import React, { useState } from "react";
-import {
   Dialog,
   DialogHeader,
   DialogBody,
@@ -15,16 +11,44 @@ import {
   Button,
 } from "@material-tailwind/react";
 
-import { authorsTableData } from "@/data";
+import API from "../../utils/apiService";
 
 export function Conversations() {
   const [open, setOpen] = useState(false);
-  const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleOpen = (author) => {
-    setSelectedAuthor(author);
+  useEffect(() => {
+    const fetchFirstChats = async () => {
+      try {
+        const response = await API.ChatService.getFirstChatPerSession();
+        setSessions(response.data);
+      } catch (error) {
+        console.error("Failed to fetch first chats per session", error);
+      }
+    };
+    fetchFirstChats();
+  }, []);
+
+  // Load chat history for selected session
+  const handleOpen = async (sessionId) => {
+    setSelectedSessionId(sessionId);
     setOpen(true);
+    setLoading(true);
+
+    try {
+      const response = await API.ChatService.getChatHistory(sessionId);
+      setChatHistory(response.data);
+    } catch (error) {
+      console.error("Failed to fetch chat history", error);
+      setChatHistory([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <div className="mt-12 mb-8 flex flex-col gap-12">
       <Card>
@@ -34,132 +58,116 @@ export function Conversations() {
           </Typography>
         </CardHeader>
         <CardBody className="overflow-x-scroll px-0 pt-0 pb-2">
-          <table className="w-full min-w-[640px] table-auto">
+          <table className="w-full min-w-[640px] table-auto cursor-pointer">
             <thead>
               <tr>
-                {["author", "function", "status", "employed", ""].map((el) => (
-                  <th
-                    key={el}
-                    className="border-b border-blue-gray-50 py-3 px-5 text-left"
+                {/* Customize columns as per your ChatDTO structure */}
+                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography
+                    variant="small"
+                    className="text-[11px] font-bold uppercase text-blue-gray-400"
                   >
-                    <Typography
-                      variant="small"
-                      className="text-[11px] font-bold uppercase text-blue-gray-400"
-                    >
-                      {el}
-                    </Typography>
-                  </th>
-                ))}
+                    Session ID
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography
+                    variant="small"
+                    className="text-[11px] font-bold uppercase text-blue-gray-400"
+                  >
+                    First Message
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography
+                    variant="small"
+                    className="text-[11px] font-bold uppercase text-blue-gray-400"
+                  >
+                    Timestamp
+                  </Typography>
+                </th>
+                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography
+                    variant="small"
+                    className="text-[11px] font-bold uppercase text-blue-gray-400"
+                  >
+                    Action
+                  </Typography>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {authorsTableData.map(
-                ({ img, name, email, job, online, date }, key) => {
-                  const className = `py-3 px-5 ${
-                    key === authorsTableData.length - 1
-                      ? ""
-                      : "border-b border-blue-gray-50"
-                  }`;
-
-                  return (
-                    <tr
-                      key={name}
-                      onClick={() =>
-                        handleOpen({ img, name, email, job, online, date })
-                      }
-                    >
-                      <td className={className}>
-                        <div className="flex items-center gap-4">
-                          <Avatar
-                            src={img}
-                            alt={name}
-                            size="sm"
-                            variant="rounded"
-                          />
-                          <div>
-                            <Typography
-                              variant="small"
-                              color="blue-gray"
-                              className="font-semibold"
-                            >
-                              {name}
-                            </Typography>
-                            <Typography className="text-xs font-normal text-blue-gray-500">
-                              {email}
-                            </Typography>
-                          </div>
-                        </div>
-                      </td>
-                      <td className={className}>
-                        <Typography className="text-xs font-semibold text-blue-gray-600">
-                          {job[0]}
-                        </Typography>
-                        <Typography className="text-xs font-normal text-blue-gray-500">
-                          {job[1]}
-                        </Typography>
-                      </td>
-                      <td className={className}>
-                        <Chip
-                          variant="gradient"
-                          color={online ? "green" : "blue-gray"}
-                          value={online ? "online" : "offline"}
-                          className="py-0.5 px-2 text-[11px] font-medium w-fit"
-                        />
-                      </td>
-                      <td className={className}>
-                        <Typography className="text-xs font-semibold text-blue-gray-600">
-                          {date}
-                        </Typography>
-                      </td>
-                      <td className={className}>
-                        <Typography
-                          as="a"
-                          href="#"
-                          className="text-xs font-semibold text-blue-gray-600"
-                        >
-                          Edit
-                        </Typography>
-                      </td>
-                    </tr>
-                  );
-                }
+              {sessions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="py-3 px-5 text-center text-gray-500"
+                  >
+                    No conversations found.
+                  </td>
+                </tr>
+              ) : (
+                sessions.map(({ sessionId, message, timestamp }) => (
+                  <tr key={sessionId}>
+                    <td className="py-3 px-5 border-b border-blue-gray-50">
+                      {sessionId}
+                    </td>
+                    <td className="py-3 px-5 border-b border-blue-gray-50">
+                      {message}
+                    </td>
+                    <td className="py-3 px-5 border-b border-blue-gray-50">
+                      {new Date(timestamp).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-5 border-b border-blue-gray-50">
+                      <Button
+                        variant="outlined"
+                        color="black"
+                        onClick={() => handleOpen(sessionId)}
+                      >
+                        View Full Chat
+                      </Button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </CardBody>
       </Card>
 
-      <Dialog open={open} handler={() => setOpen(false)} size="sm">
+      {/* Modal for chat history */}
+      <Dialog
+        open={open}
+        handler={() => setOpen(false)}
+        size="lg"
+        className="max-w-3xl"
+      >
         <DialogHeader>Conversation Details</DialogHeader>
         <DialogBody divider>
-          {selectedAuthor && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-4">
-                <Avatar src={selectedAuthor.img} size="md" variant="rounded" />
-                <div>
-                  <Typography variant="h6">{selectedAuthor.name}</Typography>
-                  <Typography variant="small" color="gray">
-                    {selectedAuthor.email}
+          {loading ? (
+            <Typography>Loading chat history...</Typography>
+          ) : chatHistory.length === 0 ? (
+            <Typography>No messages in this conversation.</Typography>
+          ) : (
+            <div className="space-y-4 max-h-[400px] overflow-y-auto">
+              {chatHistory.map(({ id, message, sender, timestamp }, index) => (
+                <div
+                  key={id || index}
+                  className="p-2 rounded border border-gray-200"
+                >
+                  <Typography
+                    variant="small"
+                    color="blue-gray"
+                    className="font-semibold"
+                  >
+                    {sender || "Unknown"}{" "}
+                    <span className="text-xs text-gray-500 ml-2">
+                      {new Date(timestamp).toLocaleString()}
+                    </span>
                   </Typography>
+                  <Typography className="mt-1">{message}</Typography>
                 </div>
-              </div>
-              <div>
-                <Typography variant="small" color="blue-gray">
-                  <strong>Function:</strong> {selectedAuthor.job[0]} -{" "}
-                  {selectedAuthor.job[1]}
-                </Typography>
-              </div>
-              <div>
-                <Typography variant="small" color="blue-gray">
-                  <strong>Status:</strong>{" "}
-                  {selectedAuthor.online ? "Online" : "Offline"}
-                </Typography>
-              </div>
-              <div>
-                <Typography variant="small" color="blue-gray">
-                  <strong>Employed:</strong> {selectedAuthor.date}
-                </Typography>
-              </div>
+              ))}
             </div>
           )}
         </DialogBody>
@@ -174,4 +182,3 @@ export function Conversations() {
 }
 
 export default Conversations;
-//Conversations

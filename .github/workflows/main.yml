@@ -18,13 +18,46 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Install and build
+    - name: Install dependencies
       run: |
         npm install --legacy-peer-deps
+        
+    - name: Create production environment
+      run: |
+        echo "VITE_API_BASE_URL=https://pidash.microwebstudios.com" > .env.production
+        echo "NODE_ENV=production" >> .env.production
+        cat .env.production
+        
+    - name: Build application
+      run: |
         npm run build
       env:
         VITE_API_BASE_URL: https://pidash.microwebstudios.com
+        NODE_ENV: production
         
+    - name: Verify build contains correct API URL
+      run: |
+        echo "Checking if build contains correct API URL..."
+        if grep -r "pidash.microwebstudios.com" dist/ > /dev/null; then
+          echo "✅ Found correct API URL in build"
+        else
+          echo "❌ API URL not found in build files"
+          echo "Build contents:"
+          find dist/ -name "*.js" -exec grep -l "localhost\|microwebstudios" {} \;
+        fi
+        
+    - name: Prepare target directory
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deploy
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          sudo mkdir -p /var/www/pidash-frontend
+          sudo chown -R deploy:deploy /var/www/pidash-frontend
+          sudo chmod -R 755 /var/www/pidash-frontend
+          rm -rf /var/www/pidash-frontend/*
+          
     - name: Deploy to VPS
       uses: appleboy/scp-action@v0.1.4
       with:
@@ -36,7 +69,7 @@ jobs:
         strip_components: 1
         overwrite: true
         
-    - name: Set permissions and reload nginx
+    - name: Set web permissions and reload nginx
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -47,3 +80,10 @@ jobs:
           sudo chmod -R 755 /var/www/pidash-frontend
           sudo nginx -t && sudo systemctl reload nginx
           echo "✅ Frontend deployed to https://pidash.microwebstudios.com"
+          
+          # Verify API URL in deployed files
+          if grep -r "pidash.microwebstudios.com" /var/www/pidash-frontend/ > /dev/null; then
+            echo "✅ Correct API URL found in deployed files"
+          else
+            echo "❌ API URL issue in deployed files"
+          fi

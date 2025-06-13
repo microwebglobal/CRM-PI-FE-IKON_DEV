@@ -1,11 +1,5 @@
-import {
-  Card,
-  Input,
-  Checkbox,
-  Button,
-  Typography,
-} from "@material-tailwind/react";
-import { Link, useNavigate } from "react-router-dom";
+import { Input, Checkbox, Button, Typography } from "@material-tailwind/react";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 

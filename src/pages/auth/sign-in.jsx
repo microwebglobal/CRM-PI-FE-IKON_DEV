@@ -1,11 +1,5 @@
-import {
-  Card,
-  Input,
-  Checkbox,
-  Button,
-  Typography,
-} from "@material-tailwind/react";
-import { Link, useNavigate } from "react-router-dom";
+import { Input, Checkbox, Button, Typography } from "@material-tailwind/react";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 
@@ -21,7 +15,7 @@ export function SignIn() {
 
     try {
       const response = await axios.post(
-        "https://pidash.microwebstudios.com/api/auth/login",
+        "http://localhost:8080/api/auth/login",
         { email, password }
       );
 

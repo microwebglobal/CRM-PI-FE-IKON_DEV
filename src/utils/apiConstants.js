@@ -1,5 +1,5 @@
 // apiConstants.js
-export const BASE_URL = "https://pidash.microwebstudios.com";
+export const BASE_URL = "http://localhost:8080";
 
 // Endpoints
 export const ENDPOINTS = {

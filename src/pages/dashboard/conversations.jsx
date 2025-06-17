@@ -93,6 +93,14 @@ export function Conversations() {
                     Action
                   </Typography>
                 </th>
+                <th className="border-b border-blue-gray-50 py-3 px-5 text-left">
+                  <Typography
+                    variant="small"
+                    className="text-[11px] font-bold uppercase text-blue-gray-400"
+                  >
+                    Version
+                  </Typography>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -106,29 +114,34 @@ export function Conversations() {
                   </td>
                 </tr>
               ) : (
-                sessions.map(({ sessionId, message, timestamp }, index) => (
-                  <tr key={sessionId}>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {message}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {new Date(timestamp).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      <Button
-                        variant="outlined"
-                        color="black"
-                        size="sm" // 👈 Smaller button
-                        onClick={() => handleOpen(sessionId)}
-                      >
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                sessions
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                  .map(({ sessionId, message, timestamp, version }, index) => (
+                    <tr key={sessionId}>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {index + 1}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {message}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {new Date(timestamp).toLocaleString()}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        <Button
+                          variant="outlined"
+                          color="black"
+                          size="sm"
+                          onClick={() => handleOpen(sessionId)}
+                        >
+                          View
+                        </Button>
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {version}
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>

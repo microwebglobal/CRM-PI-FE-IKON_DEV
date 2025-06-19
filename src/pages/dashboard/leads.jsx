@@ -121,6 +121,7 @@ export function Leads() {
                   "Full Name",
                   "Insurance Type",
                   "Vehicle No.",
+                  "Time Stamp",
                   "Contact",
                   "Status",
                   "Action",
@@ -150,38 +151,43 @@ export function Leads() {
                   </td>
                 </tr>
               ) : (
-                leads.map((lead, index) => (
-                  <tr key={lead.id}>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.fullName}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.insuranceType}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.vehicleNumber || "-"}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.contactNumber}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      {lead.status}
-                    </td>
-                    <td className="py-3 px-5 border-b border-blue-gray-50">
-                      <Button
-                        variant="outlined"
-                        color="black"
-                        size="sm" // 👈 Make button smaller
-                        onClick={() => handleOpen(lead)}
-                      >
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                leads
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                  .map((lead, index) => (
+                    <tr key={lead.id}>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {index + 1}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {lead.fullName}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {lead.insuranceType}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {lead.vehicleNumber || "-"}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {new Date(lead.timestamp).toLocaleString() || "-"}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {lead.contactNumber}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        {lead.status}
+                      </td>
+                      <td className="py-3 px-5 border-b border-blue-gray-50">
+                        <Button
+                          variant="outlined"
+                          color="black"
+                          size="sm" // 👈 Make button smaller
+                          onClick={() => handleOpen(lead)}
+                        >
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
